@@ -2,7 +2,11 @@ from enum import Enum
 from typing import List
 from pydantic import BaseModel
 from fastapi import FastAPI
+import pandas as pd 
 
+csv_file = "./Draft-rankings-export-2025.csv"
+
+df = pd.read_csv(csv_file)
 
 app = FastAPI()
 
@@ -15,11 +19,23 @@ class Positions(str, Enum):
     k = "K"
 
 class Player(BaseModel):
+    rank: int
     name: str
     position: str
-    team_played_for: list[str]
+    team: str
+    projected_points: float
 
 player_list: list[Player] = []
+
+for index, row in df.iterrows():
+    player_list.append(
+        Player(
+            rank=row["Overall Rank"],
+            name=row["Full Name"], 
+            position=row["Position"], 
+            team=row["Team Abbreviation"], 
+            projected_points=row["Projected Points"]
+        ))
 
 @app.get('/')
 def root():
@@ -39,8 +55,7 @@ async def add_player(player: Player):
 
 @app.get("/players")
 async def get_players():
-    for player in player_list:
-        return {player.name: player.team_played_for}
+    return player_list
 
 @app.get("/players/{position}")
 async def get_position(position: Positions):
@@ -48,12 +63,14 @@ async def get_position(position: Positions):
     for player in player_list:
         if player.position == position:
             res.append(player)
-    if position.value == "WR":
-        return {"position": position, "message": "You chose the Wide Receivers", "players": res}
-    if position is Positions.rb:
-        return {"position": position, "message": "Running Backs - good choice", "players": res}
-    if position.value == "QB":
-        return {"position": position, "message": "You chose the Quarter Backs", "players": res}
-    if position is Positions.te:
-        return {"position": position, "message": "Tight Ends - good choice", "players": res}
-    return {"position": position, "message": f"Honestly who cares about {position.value}", "players": res}
+    match position:
+        case "WR":
+            return {"position": position, "message": "You chose the Wide Receivers", "players": res}
+        case "RB":
+            return {"position": position, "message": "Running Backs - good choice", "players": res}
+        case "QB":
+            return {"position": position, "message": "You chose the Quarter Backs", "players": res}
+        case "TE":
+            return {"position": position, "message": "Tight Ends - good choice", "players": res}
+        case _:
+            return {"position": position, "message": f"Honestly who cares about {position.value}", "players": res}
