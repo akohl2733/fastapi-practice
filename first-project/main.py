@@ -1,5 +1,5 @@
 from typing import Union, Annotated, Literal
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Path
 from pydantic import BaseModel, Field
 
 app = FastAPI()
@@ -15,14 +15,20 @@ class Item(BaseModel):
     price: float = Field(default=0.0, validate_default=True)
     is_offer: Union[bool, None] = None
 
-
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
 
 @app.get("/items/")
-async def read_items(filter_query: Annotated[FilterParams, Query()]):
-    return filter_query
+async def read_items(
+    item_id: Annotated[int, Path(title="The ID of the item to get")],
+    q: Annotated[str | None, Query(alias="Item-query")] = None,
+):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+    
 
 @app.get("/items/{item_id}")
 def read_item(item_id: int, q: Union[str, None] = None):
