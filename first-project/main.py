@@ -15,6 +15,9 @@ class Item(BaseModel):
     price: float = Field(default=0.0, validate_default=True)
     is_offer: Union[bool, None] = None
 
+class GroceryList(BaseModel):
+    items: list[Item] = []   
+
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
